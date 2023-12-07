@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>CAIC Accident Explorer</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="images/blue_snow_icon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+	
+		<!-- Loading Leaflet Omnivore to read CSV file -->
+	<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+  <!-- Loading Leaflet heatmap plugin -->
+	<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-heat/v0.1.3/leaflet-heat.js'></script>
+	
+		<!-- Loading fontawesome -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"/>
+	
+	<!-- Loading Leaflet EasyButton -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+	<script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+	
+	<!-- Loading Leaflet Lasso Button -->
+	<script src="https://unpkg.com/leaflet-lasso@2.2.12/dist/leaflet-lasso.umd.min.js"></script>
+	
+	<!-- Loading jquery, moment.js, and daterangepicker -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+	<link rel="stylesheet" type="text/css" href="Accidents.css">
+	<!-- Loading chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<!-- Loading jquery csv - can remove when lat/long included in api -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.21/jquery.csv.min.js"></script>
+	
+	<!-- Loading d3 -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+	<!-- Loading dc -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dc/4.2.7/dc.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dc/4.2.7/style/dc.min.css" />
+
+	<!-- Loading crossfilter -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.12/crossfilter.min.js"></script>
+
+	<!-- Loading js datalabels -->
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+	
+</head>
+<body>
+	<div id="loading-overlay">
+        <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+	</div>	
+	<div id='container'>
+		<div id='map'>
+    	</div>
+		<div id='side-panel'>
+			<div id='title-block'>
+				<h2 id="CAIC">CAIC Accident Explorer</h2>
+				<div id="controlBundle">
+					<button id="resetFiltersBtn" class="fa fa-filter-circle-xmark" onclick="clearFilters()"></button>
+					<div class="input-wrapper">
+						<input id="reportrange"/>
+						<label for="reportrange" class="fa fa-calendar"></label>
+						<label for="reportrange" class="fa fa-caret-down"></label>
+					</div>
+				</div>	
+			</div>
+			<div id='about-help'><a class="btn-info" href="https://avalanche.state.co.us/accident-explorer/about" target="_blank">About this Project</a><a class="btn-info" href="https://avalanche.state.co.us/accident-explorer/help" target="_blank">Help</a></div>
+			<div id='chart-container'>
+				<div id="chart-mode"><canvas id="bar-chart-mode"></canvas></div>
+				<div id='chart-travel'><canvas id="barChartCanvas"></canvas></div>
+				<div id="pies">
+					<div id="chart-rose">
+						<div id="pie-rose" class="row pie-row">
+							<div class="col-xs-12 col-md-4">
+								<div class="chart-wrapper">
+									<div class="chart-title">
+										Avalanche Rose 
+										<span
+											id="unknown-avy-rose-number-display" data-toggle="tooltip" data-placement="top"
+											title="Incomplete elevation or aspect information has prevented some avalanches from being plotted on the rose.">
+										</span>
+									</div>
+									<div class="chart-stage text-center">
+										<a class="reset hidden within-chart" href="javascript:void(0)">
+											<!-- <span class="icon">↻</span> -->
+										</a>
+										<div id="rose-pie-chart" class='hidden'></div>
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="180">
+											<g transform="matrix(1, 0, 0, 1, 28.720007, 28.720008)">
+												<g class="avy-rose-part" filter="E <TL">
+													<path d="M 376.21 127 L 376.21 273 L 329.82 253.78 L 329.82 146.26 L 376.21 127 Z" transform="translate(-8.72 -8.72)">
+														<title>E &lt;TL</title>
+													</path>
+													<text transform="translate(345 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="E TL">
+													<path d="M 329.83 146.22 L 329.83 253.74 L 282.95 234.33 L 282.95 165.62 L 329.83 146.22 Z" transform="translate(-8.72 -8.72)">
+														<title>E TL</title>
+													</path>
+													<text transform="translate(298 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="E >TL">
+													<path d="M 282.93 165.65 L 282.93 234.36 L 200 200 L 282.93 165.65 Z" transform="translate(-8.72 -8.72)">
+														<title>E &gt;TL</title>
+													</path>
+													<text transform="translate(250 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SE >TL">
+													<path d="M 200 200 L 282.94 234.36 L 234.36 283 L 200 200 Z" transform="translate(-8.72 -8.72)">
+														<title>SE &gt;TL</title>
+													</path>
+													<text transform="translate(236 236)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SE TL">
+													<path d="M 282.94 234.36 L 329.82 253.77 L 253.76 329.77 L 234.36 283 L 282.94 234.36 Z" transform="translate(-8.72 -8.72)">
+														<title>SE TL</title>
+													</path>
+													<text transform="translate(267 267)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SE <TL">
+													<path d="M 329.82 253.77 L 376.21 273 L 273 376.21 L 253.77 329.79 L 329.82 253.77 Z" transform="translate(-8.72 -8.72)">
+														<title>SE &lt;TL</title>
+													</path>
+													<text transform="translate(300 300)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="S <TL">
+													<path d="M 253.76 329.79 L 273 376.21 L 127 376.21 L 146.22 329.81 L 253.76 329.79 Z" transform="translate(-8.72 -8.72)">
+														<title>S &lt;TL</title>
+													</path>
+													<text transform="translate(191 348)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="S TL">
+													<path d="M 234.36 283 L 253.76 329.84 L 146.23 329.84 L 165.64 283 L 234.36 283 Z" transform="translate(-8.72 -8.72)">
+														<title>S TL</title>
+													</path>
+													<text transform="translate(191 300)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="S >TL">
+													<path d="M 200 200 L 234.36 283 L 165.65 283 L 200 200 Z" transform="translate(-8.72 -8.72)">
+														<title>S &gt;TL</title>
+													</path>
+													<text transform="translate(191 255)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SW >TL">
+													<path d="M 200 200 L 165.64 283 L 117.07 234.4 L 200 200 Z" transform="translate(-8.72 -8.72)">
+														<title>SW &gt;TL</title>
+													</path>
+													<text transform="translate(145 236)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SW TL">
+													<path d="M 165.64 283 L 146.23 329.86 L 70.23 253.86 L 117.14 234.43 L 165.64 283 Z" transform="translate(-8.72 -8.72)">
+														<title>SW TL</title>
+													</path>
+													<text transform="translate(115 267)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="SW <TL">
+													<path d="M 146.23 329.81 L 127 376.21 L 23.79 273 L 70.16 253.79 L 146.16 329.79 L 146.23 329.81 Z" transform="translate(-8.72 -8.72)">
+														<title>SW &lt;TL</title>
+													</path>
+													<text transform="translate(83 300)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="W <TL">
+													<path d="M 70.16 253.78 L 23.79 273 L 23.79 127 L 70.12 146.2 L 70.16 253.78 Z" transform="translate(-8.72 -8.72)">
+														<title>W &lt;TL</title>
+													</path>
+													<text transform="translate(38 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="W TL">
+													<path d="M 117.07 165.65 L 117.07 234.34 L 70.16 253.78 L 70.16 146.2 L 117.07 165.65 Z" transform="translate(-8.72 -8.72)">
+														<title>W TL</title>
+													</path>
+													<text transform="translate(85 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="W >TL">
+													<path d="M 200 200 L 117.07 234.35 L 117.07 165.66 L 200 200 Z" transform="translate(-8.72 -8.72)">
+														<title>W &gt;TL</title>
+													</path>
+													<text transform="translate(130 193)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NW >TL">
+													<path d="M 165.65 117.08 L 200 200 L 117.07 165.65 L 165.65 117.08 Z" transform="translate(-8.72 -8.72)">
+														<title>NW &gt;TL</title>
+													</path>
+													<text transform="translate(148 149)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="N >TL">
+													<path d="M 234.35 117.08 L 200 200 L 165.65 117.08 L 234.35 117.08 Z" transform="translate(-8.72 -8.72)">
+														<title>N &gt;TL</title>
+													</path>
+													<text transform="translate(191 136)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NE >TL">
+													<path d="M 234.35 117.08 L 282.92 165.65 L 200 200 L 234.35 117.08 Z" transform="translate(-8.72 -8.72)">
+														<title>NE &gt;TL</title>
+													</path>
+													<text transform="translate(235 149)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NE TL">
+													<path d="M 329.83 146.22 L 282.93 165.65 L 234.36 117.08 L 253.8 70.13 L 329.83 146.22 Z" transform="translate(-8.72 -8.72)">
+														<title>NE TL</title>
+													</path>
+													<text transform="translate(266 120)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NE <TL">
+													<path d="M 376.21 127 L 329.83 146.21 L 253.83 70.12 L 273 23.79 L 376.21 127 Z" transform="translate(-8.72 -8.72)">
+														<title>NE &lt;TL</title>
+													</path>
+													<text transform="translate(300 85)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="N <TL">
+													<path d="M 273 23.79 L 253.8 70.13 L 146.24 70.13 L 127 23.79 L 273 23.79 Z" transform="translate(-8.72 -8.72)">
+														<title>N &lt;TL</title>
+													</path>
+													<text transform="translate(191 40)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="N TL">
+													<path d="M 253.76 70.11 L 234.31 117.11 L 165.61 117.11 L 146.16 70.11 L 253.76 70.11 Z" transform="translate(-8.72 -8.72)">
+														<title>N TL</title>
+													</path>
+													<text transform="translate(191 88)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NW TL">
+													<path d="M 146.2 70.11 L 165.65 117.11 L 117.07 165.68 L 70.12 146.2 L 146.2 70.11 Z" transform="translate(-8.72 -8.72)">
+														<title>NW TL</title>
+													</path>
+													<text transform="translate(117 120)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<g class="avy-rose-part" filter="NW <TL">
+													<path d="M 127 23.79 L 146.2 70.11 L 70.13 146.17 L 23.79 127 L 127 23.79 Z" transform="translate(-8.72 -8.72)">
+														<title>NW &lt;TL</title>
+													</path>
+													<text transform="translate(85 85)" dominant-baseline="middle" text-anchor="middle">0</text>
+												</g>
+												<text 
+													class="cardinal-direction rose-multiselector" dominant-baseline="middle" text-anchor="middle" x="191" y="-5"
+													filter='["N >TL", "N TL", "N <TL", "NE >TL", "NE TL", "NE <TL", "NW >TL", "NW TL", "NW <TL"]'>
+													N
+												</text>
+												<text 
+													class="cardinal-direction rose-multiselector"  dominant-baseline="middle" text-anchor="middle" y="195" x="-12"
+													filter='["W >TL", "W TL", "W <TL", "SW >TL", "SW TL", "SW <TL", "NW >TL", "NW TL", "NW <TL"]'>
+													W
+												</text>
+												<text
+													class="cardinal-direction rose-multiselector" dominant-baseline="middle" text-anchor="middle" x="387" y="195"
+													filter='["E >TL", "E TL", "E <TL", "SE >TL", "SE TL", "SE <TL", "NE >TL", "NE TL", "NE <TL"]'>
+													E
+												</text>
+												<text
+													class="cardinal-direction rose-multiselector" dominant-baseline="middle" text-anchor="middle"  x="191" y="395"
+													filter='["S >TL", "S TL", "S <TL", "SE >TL", "SE TL", "SE <TL", "SW >TL", "SW TL", "SW <TL"]'>
+													S
+												</text>
+											</g>
+										</svg>
+										<span>
+											<a href="javascript:void(0)" class="rose-multiselector" filter='["N <TL", "NE <TL", "E <TL", "SE <TL", "S <TL", "SW <TL", "W <TL", "NW <TL"]'>Below</a>
+											<a href="javascript:void(0)" class="rose-multiselector" filter='["N <TL", "NE <TL", "E <TL", "SE <TL", "S <TL", "SW <TL", "W <TL", "NW <TL", "N TL", "NE TL", "E TL", "SE TL", "S TL", "SW TL", "W TL", "NW TL"]'>|</a>
+											<a href="javascript:void(0)" class="rose-multiselector" filter='["N TL", "NE TL", "E TL", "SE TL", "S TL", "SW TL", "W TL", "NW TL"]'>Near</a>
+											<a href="javascript:void(0)" class="rose-multiselector" filter='["N TL", "NE TL", "E TL", "SE TL", "S TL", "SW TL", "W TL", "NW TL", "N >TL", "NE >TL", "E >TL", "SE >TL", "S >TL", "SW >TL", "W >TL", "NW >TL"]'>|</a>
+											<a href="javascript:void(0)" class="rose-multiselector" filter='["N >TL", "NE >TL", "E >TL", "SE >TL", "S >TL", "SW >TL", "W >TL", "NW >TL"]'>Above</a>
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class='pink-box'>
+						<div id="chart-r"><canvas id="pie-r"></canvas></div>
+						<div id="chart-d"><canvas id="pie-d"></canvas></div>
+					</div>
+					
+				</div>
+			<div id="chart-area" ><canvas id="bar-chart" ></canvas></div>				
+			</div>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="AvalancheRose.js"></script>
+	<script type="text/javascript" src="zones.js"></script>
+	<script type="text/javascript" src="chartClicks.js"></script>
+	<script type="text/javascript" src="layerFilter.js"></script>
+	<script type="text/javascript" src="heatFunction.js"></script>
+	<script type="text/javascript">
+	
+	let now = moment();
+	let currentYear = moment().year();
+	let currentMonth = moment().month();
+	let currentAviYear
+	
+	//today back to 10/1/currentYear
+	// the avalanche year is from 10/01 to 9/31 each year.
+	let findAvalancheYear = () => {
+		// check if it is after October 1 if so, calculate the current year from now to September 30
+		if (currentMonth == 'October'||'November'||'December') {
+			currentAviYear = currentYear;}
+		else {
+			currentAviYear = currentYear-1;
+		}
+	}
+	findAvalancheYear()
+
+	var map = L.map('map').setView([39.118413163683854, -106.44565988833477], 7.5);
+
+		//Add CAIC logo
+		L.Control.Button = L.Control.extend({
+		options: {
+			position: 'bottomright',
+			width:'120px'
+		},
+		onAdd: function (map) {
+			var caicContainer = L.DomUtil.create('div', 'leaflet-control');
+			$(caicContainer).html('<a href="https://avalanche.state.co.us/" target="_blank"><div id="caicLogo"></div></a>');
+			return caicContainer;
+		},
+		onRemove: function(map) {},
+	});
+	var caicLogo = new L.Control.Button()
+	//caicLogo.addTo(map);
+	
+	//Add CMC GIS attribution
+	L.Control.Button = L.Control.extend({
+		options: {
+			position: 'bottomright',
+			width:'120px'
+		},
+		onAdd: function (map) {
+			var cmcContainer = L.DomUtil.create('div', 'leaflet-control');
+			$(cmcContainer).html('<div id="cmcLogo"><a class="text" href="https://coloradomtn.edu/programs/gis/" target="_blank"> <p class="text"> Joe Tayabji, Lucy Kepner, Dara Seidl | CMC GIS </p></a> </div>');
+			return cmcContainer;
+		},
+		onRemove: function(map) {},
+	});
+	var cmcLogo = new L.Control.Button()
+	cmcLogo.addTo(map);
+
+	//add Natural Atlas logo when zoom is above 10 and it is set as base layer
+	var naturalAtlasImg = L.control({position: "bottomright", orientation: 'horizontal'});
+	naturalAtlasImg.onAdd = function(map) {
+		var div = L.DomUtil.create("div");
+		div.innerHTML = '<img src="images/na-attribution.png" style="width: 120px; float: right"></img>';
+		return div;
+	};
+
+	map.on('zoom', function(evt){
+		var zoomLevel = map.getZoom();
+		var naturalAtlasOn = map.hasLayer(Natural_Atlas);
+		naturalAtlasImg.remove();		
+		caicLogo.remove();
+		cmcLogo.remove();
+
+		if ((zoomLevel >= 10) && naturalAtlasOn){
+			naturalAtlasImg.addTo(map);
+		};
+
+		//caicLogo.addTo(map);
+		cmcLogo.addTo(map);
+	});
+
+	var Natural_Atlas = L.tileLayer(
+		'https://a-naturalatlas-tiles.global.ssl.fastly.net/topo/{z}/{x}/{y}/t@2x.jpg', {
+		attribution: 'Tiles &copy; <a href="https://naturalatlas.com/"> Natural Atlas </a>',
+		maxZoom: 13,
+	}).addTo(map);
+
+	Natural_Atlas.onRemove = function(map) {naturalAtlasImg.remove()};
+	Natural_Atlas.onAdd = function(map) {
+		var zoomLevel = map.getZoom();
+		caicLogo.remove();
+		cmcLogo.remove();
+		if (zoomLevel >= 10){
+			naturalAtlasImg.addTo(map);
+		};
+		//caicLogo.addTo(map);
+		cmcLogo.addTo(map);
+	};
+
+	var imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+		attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+		maxZoom: 13,
+	});
+	
+	var Esri_WorldTerrain = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
+		attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
+		maxZoom: 13,
+	});
+
+	
+	//Zoom settings for home button
+	var home = {
+		lat: 39.118413163683854,
+		lng: -106.44565988833477,
+		zoom: 7.5
+	};
+
+	
+	//what to show when legend isn't active
+	function hideLegend() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+	}
+
+	//legend for all layers on
+	var legendAll = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAll() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>D Scale, 1 to 5</b></br>";
+		div.innerHTML += '<i style="background: rgba(255, 255, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 232, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 208, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 184, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 159, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 132, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 103, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 69, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 0, 0)"></i><span></span><br><br>';
+ 		div.innerHTML += "<b>R Scale Circle Size, 1 to 5</b></br>";
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 10px; height: 10px; margin-right: 2px; margin-top: 8px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 12px; height: 12px; margin-right: 2px; margin-top: 6px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 14px; height: 14px; margin-right: 2px; margin-top: 4px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 16px; height: 16px; margin-right: 2px; margin-top: 2px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 18px; height: 18px"></i><span></span><br><br>';
+		div.innerHTML += "<b>Travel Mode</b></br>";
+		div.innerHTML += '<img src="images/ski_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Ski/Snowboard<br>";
+		div.innerHTML += '<img src="images/snowmobile_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowmobile<br>";
+		div.innerHTML += '<img src="images/foot_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Hiker<br>";
+		div.innerHTML += '<img src="images/snowshoe_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowshoer<br>";
+		div.innerHTML += '<img src="images/other_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Other<br><br>";
+		div.innerHTML += "<b>Heatmap, Least to Most Dense</b></br>";
+		div.innerHTML += '<i style="background: cyan"></i><span></span>';
+		div.innerHTML += '<i style="background: blue"></i><span></span>';
+		div.innerHTML += '<i style="background: purple" ></i><span></span>';
+	};
+
+	legendAll.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAll()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for just Accidents layer
+	var legendAcc = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAcc() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>D Scale, 1 to 5</b></br>";
+		div.innerHTML += '<i style="background: rgba(255, 255, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 232, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 208, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 184, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 159, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 132, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 103, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 69, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 0, 0)"></i><span></span><br><br>';
+ 		div.innerHTML += "<b>R Scale Circle Size, 1 to 5</b></br>";
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 10px; height: 10px; margin-right: 2px; margin-top: 8px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 12px; height: 12px; margin-right: 2px; margin-top: 6px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 14px; height: 14px; margin-right: 2px; margin-top: 4px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 16px; height: 16px; margin-right: 2px; margin-top: 2px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 18px; height: 18px"></i><span></span>';
+	};
+
+	legendAcc.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAcc()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for Accident by Travel Mode layer
+	var legendAccByType = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAccByType() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>Travel Mode</b></br>";
+		div.innerHTML += '<img src="images/ski_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Ski/Snowboard<br>";
+		div.innerHTML += '<img src="images/snowmobile_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowmobile<br>";
+		div.innerHTML += '<img src="images/foot_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Hiker<br>";
+		div.innerHTML += '<img src="images/snowshoe_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowshoer<br>";
+		div.innerHTML += '<img src="images/other_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Other";
+	};
+
+	legendAccByType.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAccByType()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for heatmap layer
+	var legendHeatmap = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendHeatmap() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>Heatmap, Least to Most Dense</b></br>";
+		div.innerHTML += '<i style="background: cyan"></i><span></span>';
+		div.innerHTML += '<i style="background: blue"></i><span></span>';
+		div.innerHTML += '<i style="background: purple" ></i><span></span>';
+	};
+
+	legendHeatmap.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendHeatmap()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for Accidents and Accidents by type layer
+	var legendAccAndAccByType = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAccAndAccByType() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>D Scale, 1 to 5</b></br>";
+		div.innerHTML += '<i style="background: rgba(255, 255, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 232, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 208, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 184, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 159, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 132, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 103, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 69, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 0, 0)"></i><span></span><br><br>';
+ 		div.innerHTML += "<b>R Scale Circle Size, 1 to 5</b></br>";
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 10px; height: 10px; margin-right: 2px; margin-top: 8px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 12px; height: 12px; margin-right: 2px; margin-top: 6px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 14px; height: 14px; margin-right: 2px; margin-top: 4px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 16px; height: 16px; margin-right: 2px; margin-top: 2px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 18px; height: 18px"></i><span></span><br><br>';
+		div.innerHTML += "<b>Travel Mode</b></br>";
+		div.innerHTML += '<img src="images/ski_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Ski/Snowboard<br>";
+		div.innerHTML += '<img src="images/snowmobile_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowmobile<br>";
+		div.innerHTML += '<img src="images/foot_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Hiker<br>";
+		div.innerHTML += '<img src="images/snowshoe_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowshoer<br>";
+		div.innerHTML += '<img src="images/other_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Other";
+	};
+
+	legendAccAndAccByType.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAccAndAccByType()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for Accidents layer with Heatmap
+	var legendAccAndHeatmap = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAccAndHeatmap() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>D Scale, 1 to 5</b></br>";
+		div.innerHTML += '<i style="background: rgba(255, 255, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 232, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 208, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 184, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 159, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 132, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 103, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 69, 0)"></i><span></span>';
+		div.innerHTML += '<i style="background: rgba(255, 0, 0)"></i><span></span><br><br>';
+ 		div.innerHTML += "<b>R Scale Circle Size, 1 to 5</b></br>";
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 10px; height: 10px; margin-right: 2px; margin-top: 8px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 12px; height: 12px; margin-right: 2px; margin-top: 6px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 14px; height: 14px; margin-right: 2px; margin-top: 4px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 16px; height: 16px; margin-right: 2px; margin-top: 2px"></i><span></span>';
+		div.innerHTML += '<i style="border-radius: 50%; border-width: 1px; border: solid grey; width: 18px; height: 18px"></i><span></span><br><br>';
+		div.innerHTML += "<b>Heatmap, Least to Most Dense</b></br>";
+		div.innerHTML += '<i style="background: cyan"></i><span></span>';
+		div.innerHTML += '<i style="background: blue"></i><span></span>';
+		div.innerHTML += '<i style="background: purple" ></i><span></span>';
+;	}
+
+	legendAccAndHeatmap.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAccAndHeatmap()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//legend for Accidents by type layer with Heatmap
+	var legendAccByTypeAndHeatmap = L.control({ position: "bottomleft", orientation: 'horizontal'});
+
+	function showLegendAccByTypeAndHeatmap() {
+		var div = document.getElementById("info legend");
+		div.innerHTML = "<b>Travel Mode</b></br>";
+		div.innerHTML += '<img src="images/ski_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Ski/Snowboard<br>";
+		div.innerHTML += '<img src="images/snowmobile_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowmobile<br>";
+		div.innerHTML += '<img src="images/foot_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Hiker<br>";
+		div.innerHTML += '<img src="images/snowshoe_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Snowshoer<br>";
+		div.innerHTML += '<img src="images/other_icon.svg" style="height: 22px; width: 22px"></img><span></span>' + "  Other<br><br>";
+		div.innerHTML += "<b>Heatmap, Least to Most Dense</b></br>";
+		div.innerHTML += '<i style="background: cyan"></i><span></span>';
+		div.innerHTML += '<i style="background: blue"></i><span></span>';
+		div.innerHTML += '<i style="background: purple" ></i><span></span>';
+	};
+
+	legendAccByTypeAndHeatmap.onAdd = function(map) {
+		var div = L.DomUtil.create("div", "info legend");
+		div.innerHTML = "<b>Show Legend</b>";
+		div.setAttribute("onmouseenter", "showLegendAccByTypeAndHeatmap()");
+		div.setAttribute("onmouseleave", "hideLegend()");
+		div.id = "info legend";
+		return div;
+	};
+
+	//update what legend is showing based on what layers are on
+	function updateLegend() {
+		var hasAccByType = map.hasLayer(accByType);
+		var hasAcc = map.hasLayer(acc);
+		var hasHeat = map.hasLayer(heat);
+		legendAll.remove();
+		legendAcc.remove();
+		legendAccByType.remove();
+		legendHeatmap.remove();
+		legendAccAndAccByType.remove();
+		legendAccAndHeatmap.remove();
+		legendAccByTypeAndHeatmap.remove();
+
+		if ((hasAcc == true) && (hasAccByType == true) && (hasHeat == true)){legendAll.addTo(map)}
+		else if ((hasAcc == true) && (hasAccByType == true)){legendAccAndAccByType.addTo(map)}
+		else if ((hasAcc == true) && (hasHeat == true)){legendAccAndHeatmap.addTo(map)}
+		else if ((hasAccByType == true) && (hasHeat)){legendAccByTypeAndHeatmap.addTo(map)}
+		else if (hasAcc == true){legendAcc.addTo(map)}
+		else if (hasAccByType == true){legendAccByType.addTo(map)}
+		else if (hasHeat == true){legendHeatmap.addTo(map)};
+	}
+
+	map.on('layeradd', function(evt) {
+  		updateLegend();
+	});
+	map.on('layerremove', function(evt) {
+  		updateLegend();
+	});
+
+
+	
+	var startDate, endDate, month=0, aType=0, mode=0, rScale=0, dScale=0;
+	var lassoIDs=[];
+	var roseFilters = rosePieChart.filters();
+	var roseFiltersFlat = roseFilters.flat();
+
+
+
+	function mapChange() {
+		var hasAcc = map.hasLayer(acc);
+		var hasAccByType = map.hasLayer(accByType);
+		var hasAccLocationPts = map.hasLayer(accLocationPts);
+		var hasZones = map.hasLayer(zones);
+		var hasHeat = map.hasLayer(heat);
+		map.removeLayer(acc);
+		map.removeLayer(accByType);
+		map.removeLayer(accLocationPts);
+		map.removeLayer(zones);
+		map.removeLayer(heat);
+		layerControl.removeLayer(acc);
+		layerControl.removeLayer(accByType);
+		layerControl.removeLayer(accLocationPts);
+		layerControl.removeLayer(zones);
+		layerControl.removeLayer(heat);
+		startDate = moment(new Date($('#reportrange').data('daterangepicker').startDate));
+		endDate = moment(new Date($('#reportrange').data('daterangepicker').endDate));
+		acc = L.geoJson(apigeo, {
+				pointToLayer: function(geoJsonPoint, latlng) {
+				return L.circleMarker(latlng);},
+				onEachFeature: onEachFeature,
+				style:style,
+				filter: layerFilter
+		});
+		accLocationPts = L.geoJson(apigeo, {
+			pointToLayer: function(geoJsonPoint, latlng) {
+						return L.circleMarker(latlng);},
+						onEachFeature: onEachFeatureLocationPts,
+						style:styleLocationPts,
+						filter:layerFilter
+		});
+		accByType = L.geoJson(apigeo, {
+				pointToLayer: function(geoJsonPoint, latlng) {
+                return L.marker(latlng);},
+				onEachFeature: onEachFeatureTravelMode,
+				style: styleAccidentType,
+				filter: layerFilter
+		});
+		roseFilters = rosePieChart.filters();
+		roseFiltersFlat = roseFilters.flat();
+		heat = createHeatmap(map, accPoints, startDate, endDate, aType, month, mode, lassoIDs, roseFiltersFlat, rScale, dScale);
+		if (hasAcc == true){acc.addTo(map)};
+		if (hasAccLocationPts == true){accLocationPts.addTo(map)};
+		if (hasAccByType == true){accByType.addTo(map)};
+		if (hasZones == true){zones.addTo(map)};
+		if (hasHeat == true){heat.addTo(map)};
+		addOverlays();
+	}
+
+	//add Current Location button
+	L.easyButton('fa-solid fa-location-crosshairs', function(btn, map){
+		map.locate({setView: true, maxZoom: 13});
+	},'Go to current location').addTo(map);
+
+	//add circle and error radius for current location
+	//found at https://leafletjs.com/examples/mobile/
+	var currLocation;
+	var currLocationError;
+
+	function onLocationFound(e) {
+    	var error = e.accuracy;
+
+    	currLocationError = L.circle(e.latlng, error, {color: '#1DA1F2', weight: 0, fillOpacity: 0.3}).addTo(map);
+		currLocation = L.circleMarker(e.latlng, {radius: 8, weight: 2, fillColor: '#1DA1F2', fillOpacity: 1, color: 'white'}).addTo(map);
+	}
+	map.on('locationfound', onLocationFound);
+
+	//remove location marker, to be called when filters are cleared
+	function removeLocationMarker() {
+		if (map.hasLayer(currLocation)) {currLocation.remove()};
+		if (map.hasLayer(currLocationError)) {currLocationError.remove()};
+	}
+
+	
+
+
+	//Add lasso button	
+	const lasso = L.lasso(map);
+		
+	L.easyButton('<img src="images/lasso.svg" style="width:19px; margin-top:6px">',function(btn,map){
+		lasso.enable();
+		},'Lasso').addTo(map);	
+	map.on('lasso.finished', evt =>{
+		lassoLayers(evt.layers);
+	});
+
+	function lassoLayers(layers) {
+		var hasAcc = map.hasLayer(acc);
+		var hasAccLocationPts = map.hasLayer(accLocationPts)
+		var hasAccByType = map.hasLayer(accByType);
+		var hasZones = map.hasLayer(zones);
+		var hasHeat = map.hasLayer(heat);
+		
+		if (hasAcc == false && hasAccByType == false && hasAccLocationPts == false && hasHeat == true ){
+		alert("Please turn on one of the accident point layers to filter by lasso.");
+		}
+
+		else if (layers.length==0){
+			alert("No points in lasso area; please try again.");
+		}
+		else{
+		
+	 	aTypeSelected = 0;
+		monthSelected = 0;
+		modeSelected = 0;
+		roseSelected = 0;
+		rSelected = 0;
+		dSelected = 0;
+		month=0;
+		aType=0;
+		mode = 0;
+		dScale =0;
+		rScale=0;
+		firstSelect=0;
+		secondSelect=0;
+		thirdSelect=0;
+		fourthSelect=0;
+		fifthSelect=0;
+		sixthSelect=0;
+
+		map.removeLayer(acc);
+		map.removeLayer(accLocationPts);
+		map.removeLayer(accByType);
+		map.removeLayer(zones);
+		map.removeLayer(heat);
+		layerControl.removeLayer(acc);
+		layerControl.removeLayer(accLocationPts);
+		layerControl.removeLayer(accByType);
+		layerControl.removeLayer(zones);
+		layerControl.removeLayer(heat);
+		lassoIDs.length = 0;
+        layers.forEach(layer => {
+				lassoIDs.push(layer.feature.properties.acc_id);
+                });
+		barChartATypeArr.length=0;
+		barChartDates.length=0;
+		barChartModeArr.length=0;
+		pieRArr.length=0;
+		pieDArr.length=0;
+		roseData.length=0;
+		rosePieChart.filterAll();
+		roseFilters = rosePieChart.filters();
+		roseFiltersFlat = roseFilters.flat();
+		function layerFilterL(feature) {
+				if (lassoIDs.includes(feature.properties.acc_id) === true){
+						return true
+				}
+				else {
+						return false
+					}
+				}
+		acc = L.geoJson(apigeo, {
+				pointToLayer: function(geoJsonPoint, latlng) {
+				return L.circleMarker(latlng);},
+				onEachFeature: onEachFeature,
+				style:style,
+				filter: layerFilterL
+		});
+		accLocationPts = L.geoJson(apigeo, {
+			pointToLayer: function(geoJsonPoint, latlng) {
+						return L.circleMarker(latlng);},
+						onEachFeature: onEachFeatureLocationPts,
+						style:styleLocationPts,
+						filter:layerFilterL
+		});
+		accByType = L.geoJson(apigeo, {
+				pointToLayer: function(geoJsonPoint, latlng) {
+                return L.marker(latlng);},
+				onEachFeature: onEachFeatureTravelMode,
+				style: styleAccidentType,
+				filter: layerFilterL
+		});
+		heat = createHeatmap(map, accPoints, startDate, endDate, aType, month, mode, lassoIDs, roseFiltersFlat, rScale, dScale);
+		//console.log(startDate, endDate, aType, month, mode, lassoIDs, roseFiltersFlat);
+		if (hasAcc == true){acc.addTo(map)};
+		if (hasAccLocationPts == true){accLocationPts.addTo(map)};
+		if (hasAccByType == true){accByType.addTo(map)};
+		if (hasZones == true){zones.addTo(map)};
+		if (hasHeat == true){heat.addTo(map)};
+		addOverlays();
+		updateATypeChart();
+		processBarChartDates();
+		processBarChartMode();
+		processDScale();
+		processRScale();
+		processRose();
+		}
+	};
+
+	
+//add Help button
+L.easyButton('fa-regular fa-circle-question', function(btn, map){
+	onClick: window.open("https://avalanche.state.co.us/accident-explorer/help", "_blank");
+},'Help with this map').addTo(map);
+
+//Function to run to clear the filters
+let clearFilters = function(btn){
+		map.setView([home.lat, home.lng], home.zoom);
+		aTypeSelected = 0;
+		monthSelected = 0;
+		modeSelected = 0;
+		roseSelected =0;
+		rSelected=0;
+		dSelected=0;
+		month=0;
+		aType=0;
+		mode = 0;
+		rScale=0;
+		dScale=0;
+		firstSelect=0;
+		secondSelect=0;
+		thirdSelect=0;
+		fourthSelect=0;
+		fifthSelect=0;
+		sixthSelect=0;
+// change date range to be last 5 avalanche years
+		$('#reportrange').data('daterangepicker').setStartDate(moment(currentAviYear + '/10/01').subtract(5, 'years'));
+		$('#reportrange').data('daterangepicker').setEndDate(moment((currentAviYear + 1) + '/9/30'));
+		//updateDisplayedDateRange(moment(currentAviYear + '/10/01').subtract(5, 'years'), moment((currentAviYear + 1) + '/9/30'));
+		barChartATypeArr.length=0;
+		barChartDates.length=0;
+		barChartModeArr.length=0;
+		pieRArr.length=0;
+		pieDArr.length=0;
+		roseData.length=0;
+		lassoIDs.length=0;
+		rosePieChart.filterAll();
+		roseFilters = rosePieChart.filters();
+		mapChange();
+		updateATypeChart();
+		processBarChartDates();
+		processBarChartMode();
+		processRScale();
+		processDScale();
+		processRose();
+		removeLocationMarker();
+	}
+
+//Button to clear map filters on map
+L.easyButton('fa fa-filter-circle-xmark',clearFilters,'Clear Filters').addTo(map);
+
+	//Get style color by Dscale
+	function getColor(d) {
+		if (d !== " "){
+			d=d.substring(1);
+			}
+		return d < 1.5 ?  '#ffff00' :
+				d < 2  ? '#ffe800' :
+				d < 2.5  ? '#ffd000' :
+				d < 3  ? '#ffb800':
+				d < 3.5 ? '#ff9f00':
+				d < 4 ? '#ff8400':
+				d < 4.5 ? '#ff6700':
+				d < 5 ? '#ff4500':
+				d < 999 ? '#ff0000':
+						 '#ffffff';
+	};
+
+
+	//Get radius by Rscale
+	function getSize(d) {
+		if (d !== " "){
+			d=d.substring(1);
+			}
+		return d < 1.5 ?  6 :
+				d < 2  ? 6 :
+				d < 2.5  ? 7 :
+				d < 3  ? 7:
+				d < 3.5 ? 8:
+				d < 4 ? 8:
+				d < 4.5 ? 9:
+				d < 5 ? 9:
+				d < 999 ? 10:
+						 6;
+	};
+
+	//Set up icon variable to be used for accident travel modes
+	var activityIcon = L.Icon.extend({
+		options: {
+			iconSize:     [27, 27],
+			shadowSize:   [0, 0],
+			iconAnchor:   [13.5, 13.5],
+			shadowAnchor: [0, 0],
+			popupAnchor:  [0, 0]
+		}
+	})
+
+	//define each icon image for accident travel modes
+	var skiIcon = new activityIcon({iconUrl: 'images/ski_icon.svg'}),
+		footIcon = new activityIcon({iconUrl: 'images/foot_icon.svg'}),
+		snowboardIcon = new activityIcon({iconUrl: 'images/ski_icon.svg'}),
+		snowmobileIcon = new activityIcon({iconUrl: 'images/snowmobile_icon.svg'}),
+		snowshoeIcon = new activityIcon({iconUrl: 'images/snowshoe_icon.svg'}),
+		otherIcon = new activityIcon({iconUrl: 'images/other_icon.svg'});
+
+	//Get style icon by accident activity (travel mode)
+	function getIcon(feature) {
+		var icon;
+		var travelMode = feature.properties.acc_travel_mode;
+
+		//get icon based on travel mode and trigger category
+		if (travelMode == "Foot") icon = footIcon;
+		else if (travelMode == "Ski") icon = skiIcon;
+		else if (travelMode == "Snowboard") icon = snowboardIcon;
+		else if (travelMode == "Snowmobile") icon = snowmobileIcon;
+		else if (travelMode == "Snowshoe") icon = snowshoeIcon;
+		else icon = otherIcon;
+
+		return icon;
+	}
+	
+	//Basic style for accident points
+	function style(feature) {
+		return {
+			radius: getSize(feature.properties.Rscale),
+			weight: 1.5,
+			opacity: 1,
+			color: 'white',
+			dashArray: '',
+			fillOpacity: 0.8,
+			//Below is to set the color by a variable, in this case by Dscale)
+			fillColor: getColor(feature.properties.Dscale)
+		};
+	}
+	// style the avi location points
+	function styleLocationPts(feature) {
+		return {
+			radius: 3.5,
+			weight: 1.5,
+			opacity: .85,
+			color: 'purple',
+		};
+	}
+	//Basic style for accident points BY TRAVEL MODE
+	function styleAccidentType(feature) {
+	}
+
+	//Basic style for Avalanche Forecast Zones
+	function styleForecastZones(feature) {
+		return {
+			weight: 1.5,
+			opacity: 1,
+			color: 'black',
+			fillOpacity: 0.25,
+			fillColor: 'grey',
+		};
+	}
+
+	//Style of accident points upon cursor hover
+	function highlightFeature(e) {
+		var layer = e.target;
+
+		layer.setStyle({
+			weight: 3,
+			color: '#666',
+			dashArray: '',
+			fillOpacity: 0.7
+		});
+
+		if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+			layer.bringToFront();
+		}
+	}
+
+	//Style of forecast zones upon cursor hover
+	function highlightZone(e) {
+		var zone = e.target;
+
+		zone.setStyle({
+			weight: 2,
+			color: '#FFFFFF',
+			dashArray: '',
+			fillOpacity: 0.7
+		});
+	}
+
+
+	function resetHighlight(e) {
+		acc.resetStyle(e.target);
+	}
+
+	function resetHighlightLocationPts(e) {
+		accLocationPts.resetStyle(e.target);
+	}
+
+	function resetHighlightTravelMode(e) {
+		accByType.resetStyle(e.target);
+	}
+
+
+	//Actions for mouseover, mouseout
+	function resetZone(e) {
+		zones.resetStyle(e.target);
+	}
+
+	//Actions for mouseover, mouseout for accident points
+	function onEachFeature(feature, layer) {
+		layer.on({
+			mouseover: highlightFeature,
+			mouseout: resetHighlight
+		});
+
+		//content of the popup
+		layer.bindPopup("<strong>" + feature.properties.acc_location +"</strong><br>" + (moment(feature.properties.datetime).format("MM/DD/YYYY")) +
+			"<br>" + feature.properties.acc_activity 
+			+ "<br>" + feature.properties.Rscale + " " + feature.properties.Dscale +
+			"<br>Caught: " + feature.properties.no_caught + 
+			", Buried: " + feature.properties.no_buried + ", Killed: " + feature.properties.no_killed + 
+			"<br><a href=" + feature.properties.report + " target=_blank>Link to Report</a>");
+			
+		//Pushing the acc_activity to the bar graph
+		//barLabels.push(feature.properties.acc_activity);
+		//Pushing the avalanche type to the bar graph
+		barChartATypeArr.push(feature.properties.atype);
+		/* use moment to get the month and push to bar chart for activity type */
+		barChartDates.push(moment(feature.properties.datetime).format("MMM"));
+		/* push to bar chart for travel mode graph*/
+		barChartModeArr.push(feature.properties.acc_travel_mode);
+		roseData.push({roseField:feature.properties.roseField});
+		if (feature.properties.Rscale != ""){
+			pieRArr.push(feature.properties.Rscale);
+		}
+		if (feature.properties.Dscale != ""){
+			pieDArr.push(feature.properties.Dscale);
+		}
+	}
+
+//Actions for mouseover, mouseout for accident points BY TRAVEL MODE
+function onEachFeatureLocationPts(feature, layer) {
+		layer.on({
+			//mouseover: highlightFeature,
+			// mouseout: resetHighlightLocationPts
+		});
+
+		//content of the popup
+		layer.bindPopup("<strong>" + feature.properties.acc_location +"</strong><br>" + (moment(feature.properties.datetime).format("MM/DD/YYYY")) +
+			"<br>" + feature.properties.acc_activity 
+			+ "<br>" + feature.properties.Rscale + " " + feature.properties.Dscale +
+			"<br>Caught: " + feature.properties.no_caught + 
+			", Buried: " + feature.properties.no_buried + ", Killed: " + feature.properties.no_killed + 
+			"<br><a href=" + feature.properties.report + " target=_blank>Link to Report</a>");
+	}
+
+	//Actions for mouseover, mouseout for accident points BY TRAVEL MODE
+	function onEachFeatureTravelMode(feature, layer) {
+		layer.on({
+			//mouseover: highlightFeature,
+			//mouseout: resetHighlightTravelMode
+		});
+
+		//content of the popup
+		layer.bindPopup("<strong>" + feature.properties.acc_location +"</strong><br>" + (moment(feature.properties.datetime).format("MM/DD/YYYY")) +
+			"<br>" + feature.properties.acc_activity 
+			+ "<br>" + feature.properties.Rscale + " " + feature.properties.Dscale +
+			"<br>Caught: " + feature.properties.no_caught + 
+			", Buried: " + feature.properties.no_buried + ", Killed: " + feature.properties.no_killed + 
+			"<br><a href=" + feature.properties.report + " target=_blank>Link to Report</a>");
+			
+		//get icon for activity
+		layer.setIcon(getIcon(feature));
+	}
+
+
+	//Actions for mouseover, mouseout for forecast zones
+	function onEachZone(feature, layer) {
+		layer.on({
+			mouseover: highlightZone,
+			mouseout: resetZone,
+			'add': function(){
+        			layer.bringToBack()
+      			}
+		});
+
+		//content of the popup
+		layer.bindPopup("<strong>" + feature.properties.name +"</strong><br>");
+		
+	}
+
+	//Classify elevation into treeline
+	function getTreeline(d) {
+		return d < 11000 ?  '<TL' :
+				d < 11700  ? 'TL' :
+				d < 20000  ? '>TL' :
+						 " ";
+	};
+
+	//Classify fatal/non-fatal
+	function getFatal(d){
+		return d < 1 ? 'Non-Fatal':
+					'Fatal';
+	}
+
+
+	//Rename the labels on the chart
+	function labelAviType(type) {
+		if (type == "SS")
+		return "Soft Slab";	
+		else if (type == "HS") 
+		return "Hard Slab";
+		else if (type == "WS") 
+		return "Wet Slab";
+		else if (type == "WL") 
+		return "Wet Loose";
+		else if (type == "I") 
+		return "Ice";
+		else if (type == "R") 
+		return "Roof";
+		else
+		return "Unknown";
+	}
+
+	var acc, accByType, zones, heat;
+	//var heat;
+	var heatPoints =[];
+	var accPoints=[];
+	const jsonURL = 'https://script.googleusercontent.com/macros/echo?user_content_key=BNC2KHZ5jFF1Ni8t3gCweFga9f7KYFkz-APJFPhAig4uTOyR6cT87WKazVfayAeB-gMJWBY60HywalOqo7tDlyB2iAwkGGTwOJmA1Yb3SEsKFZqtv3DaNYcMrmhZHmUMWojr9NvTBuBLhyHCd5hHa3vuCMNso7y_p5ZNyiNVWkWPJtDMMb5am2CimctfGZgX3fPWPLabdELPghyBW_R6S0MG2WYvTVB-eUtx-5BJYb4-qU7QFww-rhRXZqHQgsmyXG2NICJix0SkXUC5IRP_9kPH47yXzrIe&lib=MVQe7nWMuXfCU-rStZvnQMZo4geuideKu';
+	//const csvURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTyG41-SAXhdHs_aew4GAMuapZZ2u9N9oUv4zz32JWX_xkye9h0k29eqZKLXa_SBkXjSAttu8AhWHnM/pub?gid=1602349743&single=true&output=csv';
+	//const apiURL = 'https://lb-octonaut.avalanche.dev/api/v2/accident_reports?per=300&r[state_eq]=CO&r[is_public_eq]=true';
+	//const apiURL = 'https://lb-octonaut.avalanche.dev/api/v2/avalanche_observations?per=300&r[is_incident_eq]=true';
+	//const apiOptions = {method: 'GET', headers: {Accept: 'application/json', Authorization: ''}};
+	const apigeo = {
+        type: "FeatureCollection",
+        features: [],
+      };
+	getData().catch(error => {
+      console.error(error);
+      });
+	async function getData() {
+	  //const response = await fetch(apiURL, apiOptions);
+	  //const json = await response.json();
+	  //console.log(json);
+	  const response = await fetch(jsonURL);
+	  //const csvResponse = await fetch(csvURL);
+	  //const csvText = await csvResponse.text();
+	  const json = await response.json();
+	  //const csvObj = $.csv.toObjects(csvText);
+
+
+	  for (var i in json.data){
+		var classicID = json.data[i].acc_id;
+		var latitude=json.data[i].acc_lat;
+		var longitude=json.data[i].acc_lon;
+		var travmode,rClass,dClass
+		//switching travel modes with " " to Unknown
+		if (json.data[i].travel_mode === ""){
+				travmode="Unknown";
+			}
+		else{
+			travmode = json.data[i].travel_mode;
+			}
+		//switching rScales with " " to ""
+		if (json.data[i].Rscale === ""){
+				rClass="";
+			}
+		else{
+			rClass = "R"+json.data[i].Rscale;
+			}
+		//switching dScales with " " to ""
+		if (json.data[i].Dscale === ""){
+			dClass="";
+			}
+		else{
+			dClass = "D"+json.data[i].Dscale;
+			}
+		let treeline = getTreeline(json.data[i].elevation);
+		let fatalVar = getFatal(json.data[i].acc_no_killed);
+		let avtype = labelAviType(json.data[i].atype);
+		//Grabbing lat/longs from the CSV
+		// for (var j in csvObj){
+		// 	var classicID2 = parseInt(csvObj[j].acc_id);
+		// 	if (classicID2 === classicID){
+		// 		latitude=csvObj[j].acc_lat;
+		// 		longitude=csvObj[j].acc_lon;
+		// 		}
+		// 	}
+		//What sets fatalvar == Fatal	
+		if (latitude != 0 && fatalVar=="Fatal"){
+			apigeo.features.push({
+				"type": "Feature",
+				"geometry": {
+				"type": "Point",
+				"coordinates": [longitude, latitude]
+				},
+				"properties": {
+					"id": json.data[i].id,
+					"acc_id":json.data[i].acc_id,
+					"acc_type":json.data[i].acc_type,
+					"report":json.data[i].report,
+					//"url":json.data[i].report,
+					"water_year":json.data[i].water_year,
+					"datetime":json.data[i].acc_date, //i it expecting a date in a certain format??
+					"acc_location":json.data[i].acc_location,
+					"acc_activity":json.data[i].acc_activity,
+					"acc_travel_mode":travmode,
+					"acc_desc":json.data[i].description,
+					"no_caught":json.data[i].acc_no_caught,
+					"no_buried":json.data[i].acc_no_buried,
+					"no_killed":json.data[i].acc_no_killed,
+					"atype":avtype,
+					// "atype":json[i].accident_avalanches[0].type_code,
+					"trigger1":json.data[i].trigger,
+					"trigger2":json.data[i].trigDes,
+					"Rscale":rClass,
+					"Dscale":dClass,
+					"surface":json.data[i].surface,
+					"setting":json.data[i].setting,
+					"elevation":json.data[i].elevation,
+					"aspect":json.data[i].aspect,
+					"slope":json.data[i].slope,
+					"treeline":treeline,
+					"roseField":json.data[i].aspect+" "+treeline,
+					"fatalVar": fatalVar
+					//"slopeDesc":json[i].accident_locations[0].slope_characteristics,
+					//"danger_rating":json[i].accident_avalanche_observations[0].danger_rating,
+				}
+				});
+				const lat = parseFloat(latitude);
+				const lon = parseFloat(longitude);
+				const date = json.data[i].acc_date;
+				//const activ = json[i].activity;
+				const travMode = travmode;
+				const accID = json.data[i].acc_id;
+				const roseID = json.data[i].aspect+" "+treeline;
+				let avType = avtype;
+				// const avType = json[i].accident_avalanches[0].type_code;
+				const rScaleID = rClass;
+				const dScaleID = dClass;
+				heatPoints.push([lat, lon, date, avType, travMode, accID, roseID, rScaleID, dScaleID])
+		}
+		};
+		startDate = moment(new Date($('#reportrange').data('daterangepicker').startDate));
+		endDate = moment(new Date($('#reportrange').data('daterangepicker').endDate));
+	  	acc = L.geoJson(apigeo, {
+			pointToLayer: function(geoJsonPoint, latlng) {
+                        return L.circleMarker(latlng);},
+						onEachFeature: onEachFeature,
+						style:style,
+						filter:layerFilter
+			});
+
+		// add plain layer with accident location only
+		accLocationPts = L.geoJson(apigeo, {
+			pointToLayer: function(geoJsonPoint, latlng) {
+						return L.circleMarker(latlng);},
+						onEachFeature: onEachFeatureLocationPts,
+						style:styleLocationPts,
+						filter:layerFilter
+		});
+
+		accByType = L.geoJson(apigeo, {
+			pointToLayer: function(geoJsonPoint, latlng) {
+                        return L.marker(latlng);},
+						onEachFeature: onEachFeatureTravelMode,
+						style: styleAccidentType,
+						filter:layerFilter
+			}).addTo(map);
+			
+		zones = L.geoJson(forecastZones, {
+			style: styleForecastZones,
+			onEachFeature: onEachZone
+			});
+		accPoints= await(heatPoints);
+		heat = createHeatmap(map, accPoints, startDate, endDate);
+
+		$('#loading-overlay').toggleClass('hidden', true);
+	}
+
+	var baseLayers = {
+		"Natural Atlas": Natural_Atlas,
+		"Imagery": imagery,
+		"Esri Terrain": Esri_WorldTerrain,
+	};
+	var overlays = {};
+
+
+	//needed to set the layerControl as a variable so we can call it in
+	//later filter function for dates
+	const layerControl = L.control.layers(baseLayers, overlays, {collapsed: true});
+	
+	//function to add control layers to map
+	function addControlLayersToMap(baseLayers, overlays, map) {
+		layerControl.addOverlay(accByType, "Accidents by Travel Mode");
+		layerControl.addOverlay(accLocationPts, "Accident Location");
+		layerControl.addOverlay(acc, "Accidents by D & R Scale");
+		layerControl.addOverlay(zones, "Backcountry Areas");
+		layerControl.addOverlay(heat, "Heatmap");
+		layerControl.addTo(map);
+	}
+
+	//add layers to overlays - wait for map to be created/data processing then create overlays
+	function addOverlays() {
+		if (heat!==undefined && acc!==undefined && accByType!==undefined) {
+			overlays["Accidents by Travel Mode"] = accByType;
+			overlays["Accidents"] = acc;
+			overlays["Backcountry Areas"] = zones;
+			overlays["Heatmap"] = heat;
+			addControlLayersToMap(baseLayers, overlays, map);
+			updateLegend();
+		}
+		else {
+			setTimeout(addOverlays, 50);
+		}
+	}
+
+	addOverlays();
+	
+	// once the dates are selected, format and display the range in the date selection box.
+	function updateDisplayedDateRange (start, end) {
+	 		$('#reportrange input').html(start.format('MMM D, YYYY') + ' - ' + end.format('MMM D, YYYY'));
+			//$('#reportrange input').html(start, end);
+	 	}
+	
+	//Sets the dropdowns and ranges for the date range picker
+	// console.log("Current Avi Year: ", currentAviYear);
+
+	$('#reportrange').daterangepicker({
+		"showDropdowns": false,
+		// October 1 thru Sept 30, currentAviYear
+		"startDate": moment(currentAviYear + '/10/01').subtract(5, 'years'),
+		"endDate": moment((currentAviYear + 1) + '/9/30'),
+		locale: {
+      		format: 'MM/DD/YYYY'
+   		 },
+		//autoUpdateInput: false,
+		ranges: {
+				'Last 5 Avalanche Years': [moment(currentAviYear + '/10/01').subtract(5, 'years'), moment((currentAviYear + 1) + '/9/30')],
+				'Current Avalanche Year': [moment(currentAviYear + '/10/01'), moment((currentAviYear + 1) + '/9/30')],
+				'Last Avalanche Year': [moment(currentAviYear + '/10/01').subtract(1, 'years'), moment(currentAviYear + '/9/30')],
+				'Last 10 Avalanche Years': [moment(currentAviYear + '/10/01').subtract(10, 'years'), moment((currentAviYear + 1) + '/9/30')],
+				'All': [moment('2008-01-01'), moment((currentAviYear + 1) + '/9/30')],
+				},
+				//maxDate: moment()
+		}, 
+		updateDisplayedDateRange,
+		
+	);
+	
+	//Sets the initial dates in the date range picker - 5 avalanche years
+	updateDisplayedDateRange(moment(currentAviYear + '/10/01').subtract(5, 'years'),moment((currentAviYear + 1) + '/9/30'));
+	
+	
+	//Upon changes to the date ranges, checks if each accident is after the start date
+	//Removes the accident layer and re-adds it with the date filter settings
+	$('#reportrange').on('apply.daterangepicker', function (ev, picker) {			
+			aType = 0;
+			month = 0;
+			mode = 0;
+			rScale=0;
+			dScale=0;
+			firstSelect=0;
+			secondSelect=0;
+			thirdSelect=0;
+			fourthSelect=0;
+			fifthSelect=0;
+			sixthSelect=0;
+			barChartATypeArr.length=0;
+			barChartDates.length=0;
+			barChartModeArr.length=0;
+			pieRArr.length=0;
+			pieDArr.length=0;
+			roseData.length=0;
+			rosePieChart.filterAll();
+			roseFilters = rosePieChart.filters();
+			lassoIDs.length=0;
+			mapChange();
+			aTypeSelected = 0;
+			monthSelected = 0;
+			modeSelected = 0;
+			rSelected=0;
+			dSelected=0;
+			roseSelected =0;
+			updateATypeChart();
+			processBarChartDates();			
+			processBarChartMode();
+			processRScale();
+			processDScale();
+			processRose();			
+
+	});
+	
+		
+	updateATypeChart();
+	processBarChartDates();
+	processBarChartMode();
+	processRScale();
+	processDScale();
+	processRose();
+
+		
+	//Setting empty arrays to hold graph data
+	//let barLabels=[];
+	let barChartATypeArr=[]
+	let barChartDates=[];
+	let barChartModeArr =[];
+	let roseData = [];
+	let pieRArr=[]
+	let pieDArr=[]
+
+		
+		
+	function updateATypeChart() {
+		if (acc != undefined){
+			if (barChartATypeArr.length > 0 || Object.keys(acc._layers).length==0){
+				
+				//Reduce the array of all aType types to an object with counts of unique activities
+				const accCount = barChartATypeArr.reduce((allNames, name) => {
+					const currCount = allNames[name] ?? 0;
+					return {
+					...allNames,
+					[name]: currCount + 1,
+					};
+					}, {});
+			
+				//Grab the keys and values from the accCount
+				barLabels2=Object.keys(accCount);
+				barValues=Object.values(accCount);
+				
+				
+				//Update the bar chart with the labels and values
+				barChartCanvas.data.labels = barLabels2;
+				barChartCanvas.data.datasets[0].data=barValues;
+				
+				//Reset the outline of any previously selected aType
+				const dataset = barChartCanvas.data.datasets[0];
+				dataset.borderWidth = [];
+				dataset.borderColor = [];
+				for (let i = 0; i < dataset.data.length; i++) {
+					dataset.borderWidth[i] = 1;
+					dataset.borderColor[i] = "rgba(0, 0, 0, 0.1)";
+					}
+				barChartCanvas.options.plugins.title.text = "Accidents by Avalanche Type";
+				barChartCanvas.update();	
+			}
+			else{
+				setTimeout(updateATypeChart, 50);
+			}
+		}
+	  else{
+		setTimeout(updateATypeChart, 50);
+		}
+	  }
+
+	
+	//default fonts for charts
+	Chart.defaults.font.family = 'Nanum Gothic';
+	Chart.defaults.font.color = '#333';
+
+	//Stores whether selections have been made in charts
+	var aTypeSelected = 0, monthSelected = 0, modeSelected = 0, roseSelected = 0,
+	rSelected=0, dSelected=0, firstSelect =0,
+	secondSelect=0, thirdSelect=0, fourthSelect=0, fifthSelect=0, sixthSelect=0;
+	
+	//Properties for aType bar graph
+	//const canvas = document.getElementById("barChartCanvas");
+	//const ctx = canvas.getContext('2d');
+	const barChartCanvas = new Chart("barChartCanvas", {
+			type: 'bar',
+			data: {
+				labels: barChartATypeArr,
+				datasets: [{
+					data: [],
+					borderColor: 'rgba(0, 0, 0, 0.1)',
+					borderWidth: 1,
+					backgroundColor:'#1f77b4'
+					
+				}]
+			},
+			options: {
+				plugins:{
+				legend: false,
+				title: {
+					display: true,
+					text: 'Accidents by Avalanche Type',
+					position: 'top'
+					}
+				},
+				maintainAspectRatio: false,
+				onClick : evt=> {
+					const points = barChartCanvas.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+					aTypeOnClick(points);
+				  },
+				scales: {
+				x: {
+					title:{
+						text: 'Type',
+						display: false
+					}
+				},
+
+				y:{
+					title:{
+						text: 'Accidents',
+						display: true
+					},
+					ticks: {
+						callback: function(value) {if (value % 1 === 0) {return value;}}
+					}
+				}
+			}
+		}});
+	
+	let barChart = new Chart('bar-chart', {
+		type: 'bar',
+		options: {
+			plugins: {
+				title: {
+					display: true,
+					text: 'Accidents by Month',
+					padding: {
+						top: 10,
+						bottom: 10
+                	}
+				},
+				legend: false
+			},
+			maintainAspectRatio: false,
+			onClick : evt=> {
+					const points = barChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+					monthOnClick(points);
+				  },
+			scales: {
+				x: {
+					title:{
+						text: 'Month',
+						display: false
+						}
+				},
+						
+				y: {
+					title:{
+						text: 'Accidents',
+						display: true
+						},
+					ticks: {callback: function(value) {if (value % 1 === 0) {return value;}}}
+				}				
+					
+			}
+		},
+		data: {
+			datasets: [
+				{
+				backgroundColor:'#1f77b4'
+        }
+			]
+		}
+		
+	});
+
+	function processBarChartDates() {
+		if (acc != undefined){
+			if (barChartDates.length > 0 || Object.keys(acc._layers).length==0){
+				/* Reduce the array of all accident dates  to an object with counts of unique months */
+				let dateData = barChartDates.reduce((allDates, month) => {
+						const currentCount = allDates[month] ?? 0;
+						return {
+						...allDates,
+						[month]: currentCount + 1,
+						};
+				}, {});
+
+				/* Convert the dates and counts to array and sort by month */
+				let dateDataArr=Object.entries(dateData);
+				sortByMonth(dateDataArr);
+				function sortByMonth(arr) {
+					var months = ['Oct', 'Nov', 'Dec','Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+					arr.sort(function(a, b){
+					return months.indexOf(a[0]) - months.indexOf(b[0]);
+				});
+				}
+				
+				let barChartKeys = Object.keys(Object.fromEntries(dateDataArr));
+				barChartValues=Object.values(Object.fromEntries(dateDataArr));
+				
+				/* // Update the bar chart with the labels and values */
+				barChart.data.labels = barChartKeys;
+				barChart.data.datasets[0].data=barChartValues;
+				
+				// Reset highlighting of previously selected month
+				const dataset = barChart.data.datasets[0];
+					dataset.borderWidth = [];
+					dataset.borderColor = [];
+					for (let i = 0; i < dataset.data.length; i++) {
+						dataset.borderWidth[i] = 1;
+						dataset.borderColor[i] = "rgba(0, 0, 0, 0.1)";
+						}
+				barChart.options.plugins.title.text = "Accidents by Month";
+				barChart.update();
+			}
+			else{
+				setTimeout(processBarChartDates, 50);
+			}
+		}
+		else{
+		  setTimeout(processBarChartDates, 50);
+		}
+	}
+
+	let barChartMode = new Chart('bar-chart-mode', {
+		type: 'bar',
+		options: {
+			plugins: {
+				title: {
+					display: true,
+					text: 'Accidents by Mode of Travel',
+					padding: {
+						top: 10,
+						bottom: 10
+                	}
+				},
+				legend: false
+			},
+				onClick : evt=> {
+					const points = barChartMode.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+					modeOnClick(points);
+					},
+			// on click here 
+			maintainAspectRatio: false,
+			scales: {
+				x: {
+					title:{
+						text: 'Month',
+						display: false
+						}
+				},
+						
+				y: {
+					title:{
+						text: 'Accidents',
+						display: true
+						},
+					ticks: {callback: function(value) {if (value % 1 === 0) {return value;}}}
+				}				
+					
+			}
+		},
+		data: {
+			datasets: [
+				{
+				backgroundColor:'#1f77b4'
+        }
+			]
+		}
+		
+	});
+
+	function processBarChartMode() {
+		if (acc != undefined){
+			if (barChartModeArr.length > 0 || Object.keys(acc._layers).length==0){
+				let dateDataMode = barChartModeArr.reduce((allDates, month) => {
+						const currentCountMode = allDates[month] ?? 0;
+						return {
+						...allDates,
+						[month]: currentCountMode + 1,
+						};
+				}, {});
+
+				let dateDataArrMode=Object.entries(dateDataMode);
+				
+				let barChartKeysMode = Object.keys(Object.fromEntries(dateDataArrMode));
+				barChartValuesMode=Object.values(Object.fromEntries(dateDataArrMode));
+				
+				/* // Update the bar chart with the labels and values */
+				barChartMode.data.labels = barChartKeysMode;
+				barChartMode.data.datasets[0].data=barChartValuesMode;
+				
+				// Reset highlighting of previously selected mode
+				const dataset = barChartMode.data.datasets[0];
+					dataset.borderWidth = [];
+					dataset.borderColor = [];
+					for (let i = 0; i < dataset.data.length; i++) {
+						dataset.borderWidth[i] = 1;
+						dataset.borderColor[i] = "rgba(0, 0, 0, 0.1)";
+						}
+				barChartMode.options.plugins.title.text = "Accidents by Travel Mode";
+				barChartMode.update();
+			}
+			else{
+				setTimeout(processBarChartMode, 50);
+			}
+		}
+		else{
+		  setTimeout(processBarChartMode, 50);
+		}
+	}
+
+	let pieR = new Chart('pie-r', {
+		type: 'doughnut',
+		plugins: [ChartDataLabels],
+		options: {
+			plugins: {
+				title: {
+					display: true,
+					text: 'Accidents by R Scale',
+					padding: {
+						top: 10,
+						bottom: 10
+                	}
+				},
+				legend: false,
+
+				datalabels:{
+					textStrokeColor:'white',
+					textStrokeWidth:'3',
+					labels: {value:{},title:{color:'black'}},
+					formatter: (val, pieR) => (pieR.chart.data.labels[pieR.dataIndex])
+				}
+			},
+				onClick : evt=> {
+					const points = pieR.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+					rScaleOnClick(points);
+					},
+			maintainAspectRatio: false,
+			scales: {
+			}
+		},
+		data: {
+			datasets: [
+				{
+				backgroundColor:'#cdced6'
+        }
+			]
+		}
+		
+	});
+
+	function processRScale() {
+		if (acc != undefined){
+			if (pieRArr.length > 0 || Object.keys(acc._layers).length==0){
+				
+				//Reduce the array of all r Scale types to an object with counts of unique R scales
+				const rScaleCount = pieRArr.reduce((allNames, name) => {
+					const currCount = allNames[name] ?? 0;
+					return {
+					...allNames,
+					[name]: currCount + 1,
+					};
+					}, {});
+			
+				//Grab the keys and values from the accCount
+				barLabels2=Object.keys(rScaleCount);
+				barValues=Object.values(rScaleCount);
+				
+				//Update the bar chart with the labels and values
+				pieR.data.labels = barLabels2;
+				pieR.data.datasets[0].data=barValues;
+				
+				//Reset the outline of any previously selected aType
+				const dataset = pieR.data.datasets[0];
+				dataset.borderWidth = [];
+				dataset.borderColor = [];
+				for (let i = 0; i < dataset.data.length; i++) {
+					dataset.borderWidth[i] = 1;
+					dataset.borderColor[i] = "rgba(0, 0, 0, 0.1)";
+					}
+				pieR.options.plugins.title.text = "Accidents by R Scale";
+				pieR.update();
+			}
+			else{
+				setTimeout(processRScale, 50);
+			}
+		}
+		else{
+		  setTimeout(processRScale, 50);
+		}
+	}
+
+	let pieD = new Chart('pie-d', {
+		type: 'doughnut',
+		plugins: [ChartDataLabels],
+		options: {
+			plugins: {
+				title: {
+					display: true,
+					text: 'Accidents by D Scale',
+					padding: {
+						top: 10,
+						bottom: 10
+                	}
+				},
+				legend: false,
+
+				datalabels:{
+					textStrokeColor:'white',
+					textStrokeWidth:'3',
+					labels: {value:{},title:{color:'black'}},
+					//font:{size:10},
+					display:'auto',
+					//align:'end',
+					formatter: (val, pieD) => (pieD.chart.data.labels[pieD.dataIndex])
+				}
+			},
+				onClick : evt=> {
+					const points = pieD.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+					dScaleOnClick(points);
+					},
+			maintainAspectRatio: false,
+			scales: {
+			}
+		},
+		data: {
+			datasets: [
+				{
+				backgroundColor:'#cdced6'
+        }
+			]
+		}
+		
+	});
+
+	function processDScale() {
+		if (acc != undefined){
+			if (pieDArr.length > 0 || Object.keys(acc._layers).length==0){
+				
+				//Reduce the array of all r Scale types to an object with counts of unique R scales
+				const dScaleCount = pieDArr.reduce((allNames, name) => {
+					const currCount = allNames[name] ?? 0;
+					return {
+					...allNames,
+					[name]: currCount + 1,
+					};
+					}, {});
+			
+				//Grab the keys and values from the accCount
+				barLabels2=Object.keys(dScaleCount);
+				barValues=Object.values(dScaleCount);
+				
+				//Update the bar chart with the labels and values
+				pieD.data.labels = barLabels2;
+				pieD.data.datasets[0].data=barValues;
+				
+				//Reset the outline of any previously selected aType
+				const dataset = pieD.data.datasets[0];
+				dataset.borderWidth = [];
+				dataset.borderColor = [];
+				for (let i = 0; i < dataset.data.length; i++) {
+					dataset.borderWidth[i] = 1;
+					dataset.borderColor[i] = "rgba(0, 0, 0, 0.1)";
+					}
+				pieD.options.plugins.title.text = "Accidents by D Scale";
+				pieD.update();
+			}
+			else{
+				setTimeout(processDScale, 50);
+			}
+		}
+		else{
+		  setTimeout(processDScale, 50);
+		}
+	}
+
+
+
+
+	function processRose() {
+		if (acc != undefined) {
+			//if the length of the roseData array >0 or there is nothing in the acc layer
+			if (roseData.length > 0 || Object.keys(acc._layers).length == 0) {
+				var ndx = crossfilter(roseData),
+					roseDimension = ndx.dimension(function (d) {
+						return d.roseField;
+					});
+
+				var rosePieVals = roseDimension.group().top(Infinity);
+				//console.log(rosePieVals);
+				var pieSum = 0;
+
+				ROSE_KEYS.forEach(key => {
+					var pieVal = rosePieVals.find(groupedVal => groupedVal.key === key) || { value: 0 };
+					$(`[filter='${key}']`).find('text').text(pieVal.value || '');
+				});
+				
+				//console.log(pieSum);
+				// if there are no filters, shows everything as selected by removing not-selected class
+				if (roseFilters.length === 0) {
+					$('.avy-rose-part').removeClass('not-selected');
+					$('.chart-title').html('Avalanche Rose');
+				}
+				// if there are filters, add up the sums for the rosePieVals
+				else {
+					//console.log(roseFilters);
+					// De-select all the avy-rose-parts
+					$('.avy-rose-part').addClass('not-selected');
+					// and then remove this deselected class from the ones that are indeed selected.
+					roseFilters.forEach(filter => {
+						var pieValFilt = rosePieVals.find(groupedVal => groupedVal.key === filter) || { value: 0 };
+						$(`[filter='${filter}']`).removeClass('not-selected');
+						pieSum += parseInt(pieValFilt.value);
+					});
+
+						$('.chart-title').html('Avalanche Rose | '+titleText+': '+pieSum);
+					}
+				}
+		
+			else {
+				setTimeout(processRose, 50);
+			}
+		}
+		else {
+			setTimeout(processRose, 50);
+		}
+	}
+
+	d3.selectAll(".avy-rose-part")
+		.on("mouseover", function () {
+			d3.select(this).classed('hovered', true);
+		})
+		.on("mouseout", function () {
+			d3.select(this).classed('hovered', false);
+		})
+		.on('click', function () {
+			// toggle the filter on the chart
+			//console.log($(this).attr('filter'));
+			rosePieChart.filter($(this).attr('filter'));
+			roseOnClick();
+			var ndx = crossfilter(roseData),
+					roseDimension = ndx.dimension(function (d) {
+						return d.roseField;
+					});
+
+			var rosePieVals = roseDimension.group().top(Infinity);
+			var pieSum = 0;
+			$('.avy-rose-part').addClass('not-selected');
+					// and then remove this deselected class from the ones that are indeed selected.
+			roseFilters.forEach(filter => {
+				var pieValFilt = rosePieVals.find(groupedVal => groupedVal.key === filter) || { value: 0 };
+				$(`[filter='${filter}']`).removeClass('not-selected');
+				pieSum += parseInt(pieValFilt.value);
+			});
+			$('.chart-title').html('Avalanche Rose | '+titleText+': '+pieSum);	
+		});
+	
+	$('.rose-multiselector').click(el => {
+		// remove all the existing filters on the rose
+		rosePieChart.filterAll();
+
+		// get the filters to be applied from the element's filter attr
+		let filter = JSON.parse($(el.target).attr('filter') || '[]');
+
+		// apply and redraw
+		rosePieChart.filter([filter]);
+		roseFilters = rosePieChart.filters();
+		roseOnClick();
+		var ndx = crossfilter(roseData),
+				roseDimension = ndx.dimension(function (d) {
+					return d.roseField;
+				});
+		var rosePieVals = roseDimension.group().top(Infinity);
+		var pieSum = 0;
+		$('.avy-rose-part').addClass('not-selected');
+				// and then remove this deselected class from the ones that are indeed selected.
+		roseFilters.forEach(filter => {
+			var pieValFilt = rosePieVals.find(groupedVal => groupedVal.key === filter) || { value: 0 };
+			$(`[filter='${filter}']`).removeClass('not-selected');
+			pieSum += parseInt(pieValFilt.value);
+		});
+		
+		$('.chart-title').html('Avalanche Rose | '+titleText+': '+pieSum);
+	});
+
+	L.control.scale().addTo(map);
+
+</script>
+
+</body>
+</html>
